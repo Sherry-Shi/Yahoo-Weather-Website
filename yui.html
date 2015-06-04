@@ -1,0 +1,431 @@
+<html>
+<head><title>Yahoo Weather</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Imagetoolbar" content="no">
+<!-- <script type="text/javascript" src="jsscript01.js"></script> -->
+<script src="http://yui.yahooapis.com/3.13.0/build/yui/yui-min.js"></script>
+<!-- Combo-handled YUI JS files: --> 
+<script type="text/javascript" src="http://yui.yahooapis.com/combo?2.9.0/build/yahoo-dom-event/yahoo-dom-event.js&2.9.0/build/element/element-min.js&2.9.0/build/button/button-min.js"></script> 
+<script src="http://connect.facebook.net/en_US/all.js"> </script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"> </script>
+</head>
+<style type="text/css">
+html {height:100%;}
+body {height:100%; margin:0; padding:0;}
+#bg {position:fixed; top:0; left:0; width:100%; height:100%;}
+#content {position:absolute; margin-top:30px;margin-left:30px}
+#size{color:white;font-size:22px}
+.pure-button-small {font-size: 85%; margin-top:30px}
+table.dataTable td.sorting_3{color:yellow}
+table.dataTable td.sorting_4{color:blue}
+</style>
+
+<body>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/fonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/reset-fonts-grids/reset-fonts-grids.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?2.9.0/build/button/assets/skins/sam/button.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.13.0/build/cssnormalize-context/cssnormalize-context-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.13.0/build/cssfonts/cssfonts-min.css">
+<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css">
+<div id="user-info" style="display: none;"></div>
+
+ 
+
+ 
+  
+<div id="bg"><img src="bluesky.jpg" width="100%" height="100%" alt=""></div>
+<div id="content">
+<div  class="yui3-cssfonts">
+	<form name="myform" class="pure-form pure-form-aligned"> 
+	 <fieldset> 
+		  
+	<span class="pure-control-group">
+		<span>
+		<label id="size" class="yui3-cssfonts" for="name" style="position:absolute;left:150px;top:20px">Location:
+		</label>
+		</span>
+		<span><input style="width:300px;hight:50px;position:absolute;left:400px;top:20px" type="text" placeholder="Enter city or zip code" class="pure-input-1-3" id="location"></span>
+		&nbsp&nbsp&nbsp&nbsp
+		<span id="submit-span"  style="position:absolute; left:750px;top:18px">			
+		
+			<input type="button" id="submit"  class="pure-button" value = "Search"></input>
+		</span>
+		</fieldset>
+ </form> 
+
+ <div id="fb-root"></div>
+ <div id="Area0" style="color:white;font-size:50px;margin-left:200px;margin-top:50px"> </div>
+<div id="Area1" style="position:absolute;margin-left:170px;margin-top:50px">&nbsp;</div>
+<div id="Area2" style="position:absolute;margin-left:160px;margin-top:150px"> </div>
+<div id="Area3" style="position:absolute;margin-left:220px;margin-top:250px"> </div>
+<div id="Area4" style="position:absolute;margin-left:220px;margin-top:320px"> </div>
+<div id="Area5" style="position:absolute;margin-left:220px;margin-top:360px"> </div>
+<div id="Area6" style="position:absolute;margin-left:220px;margin-top:420px"> </div>
+<!-- <div id="Area7" style="position:absolute;margin-left:250px;margin-top:200px" class="yui3-skin-sam"> </div> -->
+<div id="Area8" style="margin-left:900px;margin-top:380px"> </div>
+<div id="Area9" style="position:absolute;margin-left:500px;margin-top:-150px" class="yui3-skin-sam"> </div>
+<div id="Area90" style="position:absolute;margin-left:500px;margin-top:-180px;color:white;font-size:20px"> </div>
+<div id="Area10" style="position:absolute;margin-top:90px;margin-left:1100px">  </div>
+
+</div>
+
+</div>
+
+<script>
+	
+</script>
+<script>
+window.onload=initAll;
+var xhr=false;
+var city;
+var ctext;
+var ctemp;
+var region;
+var  country;
+var link;
+var img;
+var feed;
+var ftext=new Array(5);
+var high=new Array(5);
+var day=new Array(5);
+var low=new Array(5);
+var valueW;
+var json;
+var flag="F";
+var temUnit="Fahrenheit";
+var type1;
+var location1;
+ function initAll()
+{
+	document.getElementById("submit").onclick=verify;
+	  //var oButton =new YAHOO.widget.Button("submit",{onclick:{fn:verify()}});
+}
+
+function unitChange(){
+
+	if(flag=='C') {flag='F';temUnit="Fahrenheit";}
+	else if(flag=='F') {flag='C';temUnit="Celsius";};
+			makeRequest(this.href);
+	return false;
+}
+
+function verify()
+{
+var location;
+
+	var blank="";
+var valid=true;
+var locType="City";
+
+ var units;
+	 location=document.myform.location.value;
+	 location1=location;
+	if(location==blank){ alert("Please input a city name or a zip code as a location!"); valid=false;}
+	else if(!isNaN(location))// the input is zip code
+		{
+			locType="ZIP Code";
+			type1=locType.replace(" ","%20");
+			if(location.length!=5) { alert("Invalid zipcode:must be five digits\n Example:90089 "); valid=false;}
+		}
+		else//the input is city
+		{
+			locType="City";
+			re=/^[a-zA-Z0-9\s]+\,[a-zA-Z\s]+\,*[a-zA-Z\s]*$/;
+			type1=locType;
+			if(!re.test(location)) 
+			{	
+				alert("Invalid location: must include state or country separated by comma\n Example:Los Angeles,CA");
+				valid=false;
+			}
+			
+		}
+	if(valid)//if the input is valid, then the javascript pass the information to the server
+	{
+		//var url="http://cs-server.usc.edu:13964/examples/servlet/RequestgetXML?location=90089&type1=ZIP"+" Code&temperature=Fahrenheit";
+		location=location.replace(" ","%20");
+		var url="http://cs-server.usc.edu:13964/examples/servlet/RequestgetXML?location="+location+"&type1="+type1+"&temperature="+temUnit;
+		makeRequest(url);
+		return false;
+	}
+}
+
+function makeRequest(url)
+{
+	
+	if(window.XMLHttpRequest) {xhr=new XMLHttpRequest();}
+	else 
+	{
+		if(window.ActiveXObject)
+		{
+			try
+			{
+				xhr=new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			catch(e){}
+		}
+	}
+	if(xhr)
+	{
+		xhr.onreadystatechange=processReqChange;
+		xhr.open("GET",url,true); xhr.send(null);
+	}
+	else
+	{
+		document.getElementById("loadArea").innerHTML="Sorry, but I couldn't create an XMLHttpRequest";
+	}
+	
+}
+
+function processReqChange()
+{
+	if(xhr.readyState==4)
+		if(xhr.status==200)
+		{
+			
+			//var json = eval('(' + xhr.responseText + ')');
+			 json=eval("("+xhr.responseText+")");
+			 var i=0;
+			if(json[0]==" alert('Zero results found!');"){
+				$( "#Area10" ).hide();
+				$( "#Area9" ).hide();
+				$( "#Area8" ).hide();
+				$( "#Area7" ).hide();
+				$( "#Area6" ).hide();
+				$( "#Area5" ).hide();
+				$( "#Area4" ).hide();
+				$( "#Area3" ).hide();
+				$( "#Area2" ).hide();
+				$( "#Area1" ).hide();
+				$("#Area90").hide();
+				$("#Area0").show();
+				document.getElementById("Area0").innerHTML="Weather information cannot be found!";
+				
+				
+			}
+			else{
+			$("#Area0").hide();
+			$( "#Area10" ).show();
+			$( "#Area9" ).show();
+			$( "#Area8" ).show();
+				$( "#Area9" ).show();
+				$( "#Area8" ).show();
+				$( "#Area7" ).show();
+				$( "#Area6" ).show();
+				$( "#Area5" ).show();
+				$( "#Area4" ).show();
+				$( "#Area3" ).show();
+				$( "#Area2" ).show();
+				$( "#Area1" ).show();
+				$("#Area90").show();
+			while(i<5)
+			{
+				 ftext[i]=json.weather.forecast[i]["@text"];
+				 high[i]=json.weather.forecast[i]["@high"];
+				 day[i]=json.weather.forecast[i]["@day"];
+				 low[i]=json.weather.forecast[i]["@low"];
+					i++;
+			}
+			 ctext=json.weather.condition["@text"];
+			 ctemp=json.weather.condition["@temp"];
+			 region=json.weather.location["@region"];
+			 country=json.weather.location["@country"];
+			 city=json.weather.location["@city"];
+			 link=json.weather.link;
+			 img=json.weather.img;
+			 feed=json.weather.feed;
+			 units=json.weather.units["@temperature"];
+			
+			 YUIDesign();
+			
+		}
+		}
+		else
+		{
+			alert("there was a problem retrieving the XML data:\n"+xhr.statusText);
+		}	
+	
+}
+ // var oButton =new YAHOO.widget.Button("submit",{onclick:{fn:verify()}});
+  
+	function YUIDesign(){
+	YUI().use('node',function(Y){
+	  var containerDiv=Y.one("#Area1");
+	 var containerDiv2=Y.one("#Area2");
+	 var containerDiv3=Y.one("#Area3");
+	 var containerDiv4=Y.one("#Area4");
+	 var containerDiv5=Y.one("#Area5");
+	 var containerDiv6=Y.one("#Area6");
+	 var containerDiv8=Y.one("#Area8");
+	 var containerDiv9=Y.one("#Area9");
+	 var deg="&deg";
+	 var uparrow="&uarr;";
+	 var downarrow="&darr;";
+	 var space="&nbsp";
+	 var html=['<div id="text1" style="font-size:60px">',city,'</div>'];
+	 Y.one('#Area1').setContent(html.join(''));
+	 Y.one('#text1').setStyle('color','white');
+	  var html=['<div id="text2" style="position:relative;left:12px;font-size:21px">',region,', ',country,'</div>'];
+	  Y.one('#Area2').setContent(html.join(''));
+	  Y.one('#text2').setStyle('color','white');
+	  var html=['<div id="text3">','<span id="text4">','<img src="',img,'">','</span>','<span id="text5" style="position:absolute;margin-left:10px;margin-top:20px;font-size:18px">',ctext,'</span>','</div>'];
+	  Y.one('#Area3').setContent(html.join(''));
+	  Y.one('#text5').setStyle('color','white');
+	  var html=['<div id="text6" style="font-size:18px">',uparrow+high[0]+deg+units+space+space+space+space+downarrow+low[0]+deg+units,'</div>'];
+	  Y.one('#Area4').setContent(html.join(''));
+	  Y.one('#text6').setStyle('color','white');
+	   document.getElementById("Area10").innerHTML="<a href='"+json.weather.link+"'><img src='news-wea.gif' > </img></a>";
+	   if(flag=='C') {temUnit="Fahrenheit";}
+	else if(flag=='F') {temUnit="Celsius";};
+	  document.getElementById("Area5").innerHTML='<div id="text7" style="position:relative;left:12px"><span id="text8" style="font-size:100px">'+ctemp+'</span><span id="text9" style="font-size:40px;position:relative;top:-50px">'+deg+'</span><div id="text10"; style="font-size:40px;position:relative;top:-110px;left:70px"><a href="http://cs-server.usc.edu:13964/examples/servlet/RequestgetXML?location='+location1+'&type1='+type1+'&temperature='+temUnit+'"id="unit">'+units+'</a></div></div>';
+	 // Y.one('#Area5').setContent(html.join(''));
+	  Y.one('#text7').setStyle('color','white');
+	  Y.one('#text8').setStyle('color','white');
+	  Y.one('#text9').setStyle('color','white');
+	  document.getElementById("unit").onclick=unitChange;
+	 
+	 var html=['<div  id="radiobuttongroup" style="font-size:18px">','<input id="radio1" type=radio name="radiofield" value="Weather" CHECKED="true"> Post Current Weather <BR>','<input id="radio2" type=radio name="radiofield" value="Forecast">Post Weather Forecast<BR><button id="facebook" style="background:#483D8B;position:relative;left:20px"> <img src=facebook.jpg style="height:20px;width:80px"> </button>','</div>'];
+	  Y.one('#Area8').setContent(html.join(''));
+	 //document.getElementById("Area8").innerHTML = '<div id="radiobuttongroup" style="font-size:18px"><input id="radio1" type=radio name="radiofield" value="Post Current Weather" CHECKED="true"> Post Current Weather <BR><input id="radio2" type=radio name="radiofield" value="Post Weather Forecast">Post Weather Forecast<BR><button id="facebook" style="background:#483D8B;position:relative;left:20px"> <img src=facebook.jpg style="height:20px;width:80px"> </button></div>';
+	  
+	 Y.one('#radiobuttongroup').setStyle('color','white');
+	  
+	    $('#facebook').bind('click', function() {
+	 valueW = Y.one("#radiobuttongroup input[name=radiofield]:checked").get("value");
+	 posttoFeed(valueW);
+    });
+	 
+	 showTable();
+	  
+	});  
+  }
+	function showTable(){
+  YUI().use("datatable",function (Y) {
+	var deg="&deg";
+	var data=[
+	{Day:json.weather.forecast[0]["@day"],Weather:json.weather.forecast[0]["@text"],High:json.weather.forecast[0]["@high"]+deg+json.weather.units["@temperature"],Low:json.weather.forecast[0]["@low"]+deg+json.weather.units["@temperature"]},
+	{Day:json.weather.forecast[1]["@day"],Weather:json.weather.forecast[1]["@text"],High:json.weather.forecast[1]["@high"]+deg+json.weather.units["@temperature"],Low:json.weather.forecast[1]["@low"]+deg+json.weather.units["@temperature"]},
+	{Day:json.weather.forecast[2]["@day"],Weather:json.weather.forecast[2]["@text"],High:json.weather.forecast[2]["@high"]+deg+json.weather.units["@temperature"],Low:json.weather.forecast[2]["@low"]+deg+json.weather.units["@temperature"]},
+	{Day:json.weather.forecast[3]["@day"],Weather:json.weather.forecast[3]["@text"],High:json.weather.forecast[3]["@high"]+deg+json.weather.units["@temperature"],Low:json.weather.forecast[3]["@low"]+deg+json.weather.units["@temperature"]},
+	{Day:json.weather.forecast[4]["@day"],Weather:json.weather.forecast[4]["@text"],High:json.weather.forecast[4]["@high"]+deg+json.weather.units["@temperature"],Low:json.weather.forecast[4]["@low"]+deg+json.weather.units["@temperature"]},
+	];
+		var table = new Y.DataTable({
+            columns:[
+			{key:"Day",allowHTML:true, emptyCellValue: "<em>N/A</em>" },
+			{key:"Weather",allowHTML:true, emptyCellValue: "<em>N/A</em>" },
+			{key:"High",allowHTML:true, emptyCellValue: "<em>N/A</em>",formatter:'<div style="color:orange">{value}</div>'},
+			{key:"Low",allowHTML:true,emptyCellValue: "<em>N/A</em>",formatter:'<div style="color:cornflowerblue">{value}</div>'}
+			],
+            summary:"Example Summary",
+            //caption:"Forecast",
+			data:data
+        });
+		document.getElementById("Area9").innerHTML="";
+		document.getElementById("Area90").innerHTML='<div  sytle="color:white;font-size:40px;position:relative;left:-50px">Forecast<div>';
+        table.render("#Area9");
+    });
+	}
+
+</script>
+
+<script>
+	
+	 var deg="&deg;";
+
+    // initialize the library with the API key
+      FB.init({
+      appId      : '321230691348785',                        // App ID from the app dashboard
+      channelUrl : '//cs-server.usc.edu:13964/examples/servlets/yui.html', // Channel file for x-domain comms
+      status     : true,                                 // Check Facebook Login status
+      xfbml      : true                                  // Look for social plugins on the page
+    });
+	
+	function posttoFeed(value){
+	
+	var p = {
+    "Look at details": {
+        "text": "here",
+        "href": json.weather.link
+    }
+	};
+	var wforecast="";
+	var deg="&deg;";
+		 for(var i=0; i<5;i++)
+	 {
+		wforecast=wforecast+day[i]+':'+ftext[i]+','+high[i]+'/'+low[i]+deg+'F'+';';
+	 }
+	
+	if(value=="Weather") 
+	{
+	FB.ui(
+	{
+    method: 'feed',
+    name: city+','+region+','+country,
+    link: json.weather.feed,
+    picture: img,
+    caption: 'The current condition for '+city+' is '+ctext,
+    description: 'Temperature is '+ctemp+deg+'F.',
+	properties:p
+	},
+	function(response) {
+		if (response && response.post_id) {
+		alert('Post was published.');
+		} else {
+		alert('Post was not published.');
+		}
+		}
+	);
+	}
+	else if(value=="Forecast")
+	{
+		FB.ui(
+	{
+    method: 'feed',
+    name: city+','+region+','+country,
+    link: 'https://developers.facebook.com/docs/dialogs/',
+    picture: 'http://www-scf.usc.edu/~csci571/2013Fall/hw8/weather.jpg',
+    caption: 'Weather Forecast for '+city,
+    description: wforecast,
+	properties:p
+	},
+	function(response) {
+		if (response && response.post_id) {
+		alert('Post was published.');
+		} else {
+		alert('Post was not published.');
+		}
+		}
+	);
+	}
+};
+
+    // fetch the status on load
+    FB.getLoginStatus(handleSessionResponse);
+ 
+ 
+    // no user, clear display
+  
+    // handle a session response from any of the auth related calls
+    function handleSessionResponse(response) {
+      // if we dont have a session, just hide the user info
+      if (!response.session) {
+      //  clearDisplay();
+        return;
+      }
+
+      // if we have a session, query for the user's profile picture and name
+      FB.api(
+        {
+          method: 'fql.query',
+          query: 'SELECT name, pic FROM profile WHERE id=' + FB.getSession().uid
+        },
+        function(response) {
+          var user = response[0];
+          $('#user-info').html('<img src="' + user.pic + '">' + user.name).show('fast');
+        }
+      );
+    }
+</script>
+</body>
+</html>
+
+
